@@ -11,7 +11,7 @@ use utf8;
 
 /// A decoder for deserializing bytes from an order preserving format to a value.
 ///
-/// Please see the **Serializer** documentation for a precise overview of the `bytekey` format.
+/// Please see the **Serializer** documentation for a precise overview of the `bytekey2` format.
 #[derive(Debug)]
 pub struct Deserializer<R> {
     reader: R,
@@ -27,7 +27,7 @@ pub enum Error {
     Message(String),
 }
 
-/// Shorthand for `Result<T, bytekey::de::Error>`.
+/// Shorthand for `Result<T, bytekey2::de::Error>`.
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Deserialize data from the given slice of bytes.
@@ -35,7 +35,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// #### Usage
 ///
 /// ```
-/// # use bytekey::{serialize, deserialize};
+/// # use bytekey2::{serialize, deserialize};
 /// let bytes = serialize(&42usize).unwrap();
 /// assert_eq!(42usize, deserialize::<usize>(&bytes).unwrap());
 /// ```
@@ -51,7 +51,7 @@ where
 /// #### Usage
 ///
 /// ```
-/// # use bytekey::{serialize, deserialize_from};
+/// # use bytekey2::{serialize, deserialize_from};
 /// let bytes = serialize(&42u64).unwrap();
 /// let result: u64 = deserialize_from(&bytes[..]).unwrap();
 /// assert_eq!(42u64, result);
@@ -552,7 +552,7 @@ impl fmt::Display for Error {
 impl StdError for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::DeserializeAnyUnsupported => "`bytekey` is not a self-describing format",
+            Error::DeserializeAnyUnsupported => "`bytekey2` is not a self-describing format",
             Error::UnexpectedEof => "encountered unexpected EOF when deserializing utf8",
             Error::InvalidUtf8 => "attempted to deserialize invalid utf8",
             Error::Io(ref err) => err.description(),

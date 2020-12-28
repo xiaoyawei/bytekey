@@ -3,13 +3,13 @@
 //! such as [leveldb](https://github.com/google/leveldb) and
 //! [sled](https://github.com/spacejam/sled).
 //!
-//! `bytekey` is *not* a self-describing format. In other words, Type information is *not*
+//! `bytekey2` is *not* a self-describing format. In other words, Type information is *not*
 //! serialized alongside values, and thus the type of serialized data must be known in order to
 //! perform deserialization.
 //!
 //! #### Supported Data Types
 //!
-//! `bytekey` currently supports all Rust primitives, strings, options, structs, enums, vecs, and
+//! `bytekey2` currently supports all Rust primitives, strings, options, structs, enums, vecs, and
 //! tuples. See **Serializer** for details on the serialization format.
 //!
 //! #### Usage
@@ -17,8 +17,8 @@
 //! ```
 //! #[macro_use]
 //! extern crate serde_derive;
-//! extern crate bytekey;
-//! use bytekey::{deserialize, serialize};
+//! extern crate bytekey2;
+//! use bytekey2::{deserialize, serialize};
 //!
 //! #[derive(Debug, PartialEq, Serialize, Deserialize)]
 //! struct MyKey { a: u32, b: String }
@@ -44,9 +44,9 @@
 //! reordered. All changes to structs, including adding, removing, reordering, or changing the type
 //! of a field are forbidden.
 //!
-//! These restrictions lead to a few best-practices when using `bytekey` serialization:
+//! These restrictions lead to a few best-practices when using `bytekey2` serialization:
 //!
-//! * Don't use `bytekey` unless you need lexicographic ordering of serialized values! A more
+//! * Don't use `bytekey2` unless you need lexicographic ordering of serialized values! A more
 //!   general encoding library such as [Cap'n Proto](https://github.com/dwrensha/capnproto-rust) or
 //!   [bincode](https://github.com/TyOverby/binary-encode) will serve you better if this feature is
 //!   not necessary.
@@ -76,7 +76,7 @@ pub enum Error {
     Deserialize(de::Error),
 }
 
-/// A short-hand for `result::Result<T, bytekey::Error>`.
+/// A short-hand for `result::Result<T, bytekey2::Error>`.
 pub type Result<T> = result::Result<T, Error>;
 
 impl From<ser::Error> for Error {

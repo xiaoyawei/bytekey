@@ -10,13 +10,13 @@ jobs:
           name: checkout
           command: |
             cargo --version
-  build:
+  build_it:
     docker:
       - image: cimg/rust:1.48.0
     steps:
-      - build
+      - build_it
       - run:
-          name: build
+          name: build_it
           command: |
             cargo build --verbose
   test:
@@ -34,3 +34,4 @@ workflows:
   build_and_test:
     jobs:
       - checkout
+      - build_it

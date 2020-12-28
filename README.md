@@ -1,6 +1,5 @@
-[![Build Status](https://img.shields.io/circleci/build/github/isubasinghe/bytekey)](https://img.shields.io/circleci/build/github/isubasinghe/bytekey) [![Build Status](https://img.shields.io/crates/l/bytekey2)](https://img.shields.io/crates/l/bytekey2)
+[![Build Status](https://img.shields.io/circleci/build/github/isubasinghe/bytekey)](https://img.shields.io/circleci/build/github/isubasinghe/bytekey) [![Build Status](https://img.shields.io/crates/l/bytekey2)](https://img.shields.io/crates/l/bytekey2) [![Rustdoc](https://docs.rs/bytekey2/badge.svg?version=0.4.3)](https://docs.rs/bytekey2/badge.svg?version=0.4.3)
 
-[rustdoc](https://danburkert.github.io/bytekey2/bytekey2/index.html)
 
 # bytekey2
 

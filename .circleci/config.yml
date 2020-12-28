@@ -5,11 +5,10 @@ jobs:
     docker:
       - image: cimg/rust:1.48.0
     steps:
-      - checkout
+      - checkout_build
       - run:
-          name: Checkout
-          command: cargo --version
-      - build
-      - run:
-          name: Build
-          command: cargo build --verbose
+          name: Checkout and Build
+          command: |
+            cargo --version
+            cargo build --verbose
+            cargo test --verbose

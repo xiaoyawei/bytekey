@@ -1,37 +1,23 @@
 version: 2.1
 
+
 jobs:
-  checkout:
+  build:
     docker:
       - image: cimg/rust:1.48.0
     steps:
       - checkout
-      - run:
-          name: checkout
-          command: |
-            cargo --version
-  build_it:
-    docker:
-      - image: cimg/rust:1.48.0
-    steps:
-      - build_it
-      - run:
-          name: build_it
-          command: |
-            cargo build --verbose
+      - run: <command>
   test:
     docker:
       - image: cimg/rust:1.48.0
     steps:
-      - test
-      - run:
-          name: test
-          command: |
-            cargo test --verbose
+      - checkout
+      - run: <command>
 
 workflows:
   version: 2
   build_and_test:
     jobs:
-      - checkout
-      - build_it
+      - build
+      - test

@@ -1,10 +1,10 @@
-extern crate bytekey;
+extern crate bytekey2;
 extern crate rand;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 
-use bytekey::serialize;
+use bytekey2::serialize;
 use rand::distributions::{Distribution, Standard};
 use rand::{random, Rng};
 use serde::Serialize;

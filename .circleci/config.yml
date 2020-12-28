@@ -9,3 +9,7 @@ jobs:
       - run:
           name: Checkout
           command: cargo --version
+      - build
+      - run:
+          name: Build
+          command: cargo build --version

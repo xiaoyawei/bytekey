@@ -57,7 +57,7 @@ impl Distribution<TestStruct> for Standard {
 
 impl Distribution<TestEnum> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> TestEnum {
-        match rng.gen_range(0, 3) {
+        match rng.gen_range(0..3) {
             0 => {
                 let len = (rng.gen::<f32>() * 10.0) as usize;
                 let string = (0..len).map(|_| random::<char>()).collect();

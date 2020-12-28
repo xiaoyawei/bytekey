@@ -73,11 +73,11 @@ impl<R: io::Read> Deserializer<R> {
 
     /// Deserialize a `u64` that has been serialized using the `serialize_var_u64` method.
     pub fn deserialize_var_u64(&mut self) -> Result<u64> {
-        let header = try!(self.reader.read_u8());
+        let header = self.reader.read_u8()?;
         let n = header >> 4;
         let (mut val, _) = ((header & 0x0F) as u64).overflowing_shl(n as u32 * 8);
         for i in 1..n + 1 {
-            let byte = try!(self.reader.read_u8());
+            let byte = self.reader.read_u8()?;
             val += (byte as u64) << ((n - i) * 8);
         }
         Ok(val)
@@ -85,12 +85,12 @@ impl<R: io::Read> Deserializer<R> {
 
     /// Deserialize an `i64` that has been serialized using the `serialize_var_i64` method.
     pub fn deserialize_var_i64(&mut self) -> Result<i64> {
-        let header = try!(self.reader.read_u8());
+        let header = self.reader.read_u8()?;
         let mask = ((header ^ 0x80) as i8 >> 7) as u8;
         let n = ((header >> 3) ^ mask) & 0x0F;
         let (mut val, _) = (((header ^ mask) & 0x07) as u64).overflowing_shl(n as u32 * 8);
         for i in 1..n + 1 {
-            let byte = try!(self.reader.read_u8());
+            let byte = self.reader.read_u8()?;
             val += ((byte ^ mask) as u64) << ((n - i) * 8);
         }
         let final_mask = (((mask as i64) << 63) >> 63) as u64;
@@ -545,7 +545,7 @@ impl From<io::Error> for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.description())
+        write!(f, "{}", self.to_string())
     }
 }
 

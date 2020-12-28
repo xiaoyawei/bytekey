@@ -218,24 +218,24 @@ where
         } else if val < 1 << 12 {
             self.writer.write_u16::<BE>((val as u16) | 1 << 12)
         } else if val < 1 << 20 {
-            try!(self.writer.write_u8(((val >> 16) as u8) | 2 << 4));
+            self.writer.write_u8(((val >> 16) as u8) | 2 << 4)?;
             self.writer.write_u16::<BE>(val as u16)
         } else if val < 1 << 28 {
             self.writer.write_u32::<BE>((val as u32) | 3 << 28)
         } else if val < 1 << 36 {
-            try!(self.writer.write_u8(((val >> 32) as u8) | 4 << 4));
+            self.writer.write_u8(((val >> 32) as u8) | 4 << 4)?;
             self.writer.write_u32::<BE>(val as u32)
         } else if val < 1 << 44 {
-            try!(self.writer.write_u16::<BE>(((val >> 32) as u16) | 5 << 12));
+            self.writer.write_u16::<BE>(((val >> 32) as u16) | 5 << 12)?;
             self.writer.write_u32::<BE>(val as u32)
         } else if val < 1 << 52 {
-            try!(self.writer.write_u8(((val >> 48) as u8) | 6 << 4));
-            try!(self.writer.write_u16::<BE>((val >> 32) as u16));
+            self.writer.write_u8(((val >> 48) as u8) | 6 << 4)?;
+            self.writer.write_u16::<BE>((val >> 32) as u16)?;
             self.writer.write_u32::<BE>(val as u32)
         } else if val < 1 << 60 {
             self.writer.write_u64::<BE>((val as u64) | 7 << 60)
         } else {
-            try!(self.writer.write_u8(8 << 4));
+            self.writer.write_u8(8 << 4)?;
             self.writer.write_u64::<BE>(val)
         }.map_err(From::from)
     }
@@ -320,29 +320,29 @@ where
             self.writer.write_u16::<BE>(masked as u16)
         } else if val < 1 << 19 {
             let masked = (val | (0x12 << 19)) ^ mask;
-            try!(self.writer.write_u8((masked >> 16) as u8));
+            self.writer.write_u8((masked >> 16) as u8)?;
             self.writer.write_u16::<BE>(masked as u16)
         } else if val < 1 << 27 {
             let masked = (val | (0x13 << 27)) ^ mask;
             self.writer.write_u32::<BE>(masked as u32)
         } else if val < 1 << 35 {
             let masked = (val | (0x14 << 35)) ^ mask;
-            try!(self.writer.write_u8((masked >> 32) as u8));
+            self.writer.write_u8((masked >> 32) as u8)?;
             self.writer.write_u32::<BE>(masked as u32)
         } else if val < 1 << 43 {
             let masked = (val | (0x15 << 43)) ^ mask;
-            try!(self.writer.write_u16::<BE>((masked >> 32) as u16));
+            self.writer.write_u16::<BE>((masked >> 32) as u16)?;
             self.writer.write_u32::<BE>(masked as u32)
         } else if val < 1 << 51 {
             let masked = (val | (0x16 << 51)) ^ mask;
-            try!(self.writer.write_u8((masked >> 48) as u8));
-            try!(self.writer.write_u16::<BE>((masked >> 32) as u16));
+            self.writer.write_u8((masked >> 48) as u8)?;
+            self.writer.write_u16::<BE>((masked >> 32) as u16)?;
             self.writer.write_u32::<BE>(masked as u32)
         } else if val < 1 << 59 {
             let masked = (val | (0x17 << 59)) ^ mask;
             self.writer.write_u64::<BE>(masked as u64)
         } else {
-            try!(self.writer.write_u8((0x18 << 3) ^ mask as u8));
+            self.writer.write_u8((0x18 << 3) ^ mask as u8)?;
             self.writer.write_u64::<BE>(val ^ mask)
         }.map_err(From::from)
     }
@@ -701,7 +701,7 @@ impl From<io::Error> for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.description())
+        write!(f, "{}", self.to_string())
     }
 }
 
@@ -716,7 +716,7 @@ impl StdError for Error {
     fn cause(&self) -> Option<&StdError> {
         match *self {
             Error::Message(ref _msg) => None,
-            Error::Io(ref err) => err.cause(),
+            Error::Io(ref err) => err.source(),
         }
     }
 }

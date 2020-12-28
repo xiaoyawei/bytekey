@@ -12,4 +12,4 @@ jobs:
       - build
       - run:
           name: Build
-          command: cargo build --version
+          command: cargo build --verbose

@@ -1,4 +1,4 @@
-[![Build Status](https://img.shields.io/circleci/build/github/isubasinghe/bytekey2)](https://img.shields.io/circleci/build/github/isubasinghe/bytekey2)
+[![Build Status](https://img.shields.io/circleci/build/github/isubasinghe/bytekey)](https://img.shields.io/circleci/build/github/isubasinghe/bytekey)
 
 [rustdoc](https://danburkert.github.io/bytekey2/bytekey2/index.html)
 

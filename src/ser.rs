@@ -92,6 +92,11 @@ where
     writer: W,
 }
 
+#[derive(Debug)]
+struct SizeCounter {
+    total: usize,
+}
+
 /// Errors that might occur while serializing.
 #[derive(Debug)]
 pub enum Error {
@@ -120,7 +125,7 @@ pub fn serialize<T>(v: &T) -> Result<Vec<u8>>
 where
     T: Serialize,
 {
-    let mut bytes = vec![];
+    let mut bytes = Vec::<u8>::with_capacity(serialized_size(v)?);
     {
         let mut buffered = io::BufWriter::new(&mut bytes);
         serialize_into(&mut buffered, v)?;
@@ -147,6 +152,25 @@ where
 {
     let mut serializer = Serializer::new(writer);
     value.serialize(&mut serializer)
+}
+
+/// Get the size that an object would be if serialized using Bytekey.
+///
+/// #### Usage
+///
+/// ```
+/// # use bytekey2::serialized_size;
+/// assert_eq!(1, serialized_size(&5u8).unwrap());
+/// assert_eq!(4, serialized_size(&10u32).unwrap());
+/// ```
+pub fn serialized_size<T>(value: &T) -> Result<usize>
+where
+    T: Serialize,
+{
+    let mut size_counter = SizeCounter::new();
+    value
+        .serialize(&mut size_counter)
+        .map(|_| size_counter.total)
 }
 
 impl<W> Serializer<W>
@@ -226,7 +250,8 @@ where
             self.writer.write_u8(((val >> 32) as u8) | 4 << 4)?;
             self.writer.write_u32::<BE>(val as u32)
         } else if val < 1 << 44 {
-            self.writer.write_u16::<BE>(((val >> 32) as u16) | 5 << 12)?;
+            self.writer
+                .write_u16::<BE>(((val >> 32) as u16) | 5 << 12)?;
             self.writer.write_u32::<BE>(val as u32)
         } else if val < 1 << 52 {
             self.writer.write_u8(((val >> 48) as u8) | 6 << 4)?;
@@ -237,7 +262,8 @@ where
         } else {
             self.writer.write_u8(8 << 4)?;
             self.writer.write_u64::<BE>(val)
-        }.map_err(From::from)
+        }
+        .map_err(From::from)
     }
 
     /// Encode an `i64` into a variable number of bytes.
@@ -344,7 +370,18 @@ where
         } else {
             self.writer.write_u8((0x18 << 3) ^ mask as u8)?;
             self.writer.write_u64::<BE>(val ^ mask)
-        }.map_err(From::from)
+        }
+        .map_err(From::from)
+    }
+}
+
+impl SizeCounter {
+    fn new() -> Self {
+        SizeCounter { total: 0 }
+    }
+
+    fn add_size(&mut self, size: usize) {
+        self.total += size;
     }
 }
 
@@ -691,6 +728,308 @@ where
     }
 }
 
+// Serializer implementations for size checker.
+
+impl<'a> serde::Serializer for &'a mut SizeCounter {
+    type Ok = ();
+    type Error = Error;
+    type SerializeSeq = Self;
+    type SerializeTuple = Self;
+    type SerializeTupleStruct = Self;
+    type SerializeTupleVariant = Self;
+    type SerializeMap = Self;
+    type SerializeStruct = Self;
+    type SerializeStructVariant = Self;
+
+    fn serialize_bool(self, _: bool) -> Result<()> {
+        self.add_size(1);
+        Ok(())
+    }
+
+    fn serialize_i8(self, _: i8) -> Result<()> {
+        self.add_size(1);
+        Ok(())
+    }
+
+    fn serialize_i16(self, _: i16) -> Result<()> {
+        self.add_size(2);
+        Ok(())
+    }
+
+    fn serialize_i32(self, _: i32) -> Result<()> {
+        self.add_size(4);
+        Ok(())
+    }
+
+    fn serialize_i64(self, _: i64) -> Result<()> {
+        self.add_size(8);
+        Ok(())
+    }
+
+    fn serialize_u8(self, _: u8) -> Result<()> {
+        self.add_size(1);
+        Ok(())
+    }
+
+    fn serialize_u16(self, _: u16) -> Result<()> {
+        self.add_size(2);
+        Ok(())
+    }
+
+    fn serialize_u32(self, _: u32) -> Result<()> {
+        self.add_size(4);
+        Ok(())
+    }
+
+    fn serialize_u64(self, _: u64) -> Result<()> {
+        self.add_size(8);
+        Ok(())
+    }
+
+    fn serialize_f32(self, _: f32) -> Result<()> {
+        self.add_size(4);
+        Ok(())
+    }
+
+    fn serialize_f64(self, _: f64) -> Result<()> {
+        self.add_size(8);
+        Ok(())
+    }
+
+    fn serialize_char(self, v: char) -> Result<()> {
+        self.add_size(v.len_utf8());
+        Ok(())
+    }
+
+    fn serialize_str(self, v: &str) -> Result<()> {
+        self.add_size(v.len() + 1);
+        Ok(())
+    }
+
+    fn serialize_bytes(self, v: &[u8]) -> Result<()> {
+        self.add_size(v.len());
+        Ok(())
+    }
+
+    fn serialize_none(self) -> Result<()> {
+        self.add_size(1);
+        Ok(())
+    }
+
+    fn serialize_some<T>(self, v: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        self.add_size(1);
+        v.serialize(self)
+    }
+
+    fn serialize_unit(self) -> Result<()> {
+        self.add_size(0);
+        Ok(())
+    }
+
+    fn serialize_unit_struct(self, _name: &'static str) -> Result<()> {
+        self.serialize_unit()
+    }
+
+    fn serialize_unit_variant(
+        self,
+        _name: &'static str,
+        variant_index: u32,
+        _variant: &'static str,
+    ) -> Result<()> {
+        self.serialize_u32(variant_index)
+    }
+
+    fn serialize_newtype_struct<T>(self, _name: &'static str, value: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_newtype_variant<T>(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        value: &T,
+    ) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        self.add_size(4);
+        value.serialize(self)
+    }
+
+    fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq> {
+        Ok(self)
+    }
+
+    fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple> {
+        Ok(self)
+    }
+
+    fn serialize_tuple_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleStruct> {
+        Ok(self)
+    }
+
+    fn serialize_tuple_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleVariant> {
+        self.add_size(4);
+        Ok(self)
+    }
+
+    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeStruct> {
+        Ok(self)
+    }
+
+    fn serialize_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeStruct> {
+        Ok(self)
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStructVariant> {
+        self.add_size(4);
+        Ok(self)
+    }
+}
+
+// Compound Implementations.
+
+impl<'a> serde::ser::SerializeSeq for &'a mut SizeCounter {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_element<T>(&mut self, value: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(&mut **self)
+    }
+
+    fn end(self) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a> serde::ser::SerializeTuple for &'a mut SizeCounter {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_element<T>(&mut self, value: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(&mut **self)
+    }
+
+    fn end(self) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a> serde::ser::SerializeTupleStruct for &'a mut SizeCounter {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<T>(&mut self, value: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(&mut **self)
+    }
+
+    fn end(self) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a> serde::ser::SerializeTupleVariant for &'a mut SizeCounter {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<T>(&mut self, value: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(&mut **self)
+    }
+
+    fn end(self) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a> serde::ser::SerializeMap for &'a mut SizeCounter {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_key<T>(&mut self, key: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        key.serialize(&mut **self)
+    }
+
+    fn serialize_value<T>(&mut self, value: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(&mut **self)
+    }
+
+    fn end(self) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a> serde::ser::SerializeStruct for &'a mut SizeCounter {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<T>(&mut self, _key: &'static str, value: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(&mut **self)
+    }
+
+    fn end(self) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a> serde::ser::SerializeStructVariant for &'a mut SizeCounter {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<T>(&mut self, _key: &'static str, value: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        value.serialize(&mut **self)
+    }
+    fn end(self) -> Result<()> {
+        Ok(())
+    }
+}
+
 // Error implementation.
 
 impl From<io::Error> for Error {
@@ -701,19 +1040,15 @@ impl From<io::Error> for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        match *self {
+            Error::Message(ref msg) => msg.fmt(f),
+            Error::Io(ref err) => err.fmt(f),
+        }
     }
 }
 
 impl StdError for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::Message(ref msg) => msg,
-            Error::Io(ref err) => err.description(),
-        }
-    }
-
-    fn cause(&self) -> Option<&StdError> {
+    fn cause(&self) -> Option<&dyn StdError> {
         match *self {
             Error::Message(ref _msg) => None,
             Error::Io(ref err) => err.source(),

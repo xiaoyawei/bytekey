@@ -65,7 +65,7 @@ pub mod de;
 pub mod ser;
 
 pub use de::{deserialize, deserialize_from, Deserializer};
-pub use ser::{serialize, serialize_into, Serializer};
+pub use ser::{serialize, serialize_into, serialized_size, Serializer};
 use std::error::Error as StdError;
 use std::{fmt, result};
 
@@ -93,19 +93,15 @@ impl From<de::Error> for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        match *self {
+            Error::Serialize(ref err) => err.fmt(f),
+            Error::Deserialize(ref err) => err.fmt(f),
+        }
     }
 }
 
 impl StdError for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::Serialize(ref err) => err.description(),
-            Error::Deserialize(ref err) => err.description(),
-        }
-    }
-
-    fn cause(&self) -> Option<&StdError> {
+    fn cause(&self) -> Option<&dyn StdError> {
         match *self {
             Error::Serialize(ref err) => Some(err),
             Error::Deserialize(ref err) => Some(err),

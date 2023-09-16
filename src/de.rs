@@ -545,22 +545,20 @@ impl From<io::Error> for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        match *self {
+            Error::DeserializeAnyUnsupported => {
+                write!(f, "`bytekey2` is not a self-describing format")
+            }
+            Error::UnexpectedEof => write!(f, "encountered unexpected EOF when deserializing utf8"),
+            Error::InvalidUtf8 => write!(f, "attempted to deserialize invalid utf8"),
+            Error::Io(ref err) => err.fmt(f),
+            Error::Message(ref msg) => msg.fmt(f),
+        }
     }
 }
 
 impl StdError for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::DeserializeAnyUnsupported => "`bytekey2` is not a self-describing format",
-            Error::UnexpectedEof => "encountered unexpected EOF when deserializing utf8",
-            Error::InvalidUtf8 => "attempted to deserialize invalid utf8",
-            Error::Io(ref err) => err.description(),
-            Error::Message(ref msg) => msg,
-        }
-    }
-
-    fn cause(&self) -> Option<&StdError> {
+    fn cause(&self) -> Option<&dyn StdError> {
         match *self {
             Error::DeserializeAnyUnsupported => None,
             Error::UnexpectedEof => None,

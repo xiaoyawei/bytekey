@@ -4,13 +4,14 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 
-use bytekey2::serialize;
+use bytekey2::{serialize, serialized_size};
 use rand::distributions::{Distribution, Standard};
 use rand::{random, Rng};
 use serde::Serialize;
+use std::fmt::Debug;
 use std::{f32, f64, i16, i64, i8, isize, u16, u64, u8, usize};
 
-#[derive(PartialEq, PartialOrd, Serialize)]
+#[derive(Debug, PartialEq, PartialOrd, Serialize)]
 struct TestStruct {
     u8_: u8,
     u16_: u16,
@@ -26,7 +27,7 @@ struct TestStruct {
     char_: char,
 }
 
-#[derive(PartialEq, PartialOrd, Serialize)]
+#[derive(Debug, PartialEq, PartialOrd, Serialize)]
 enum TestEnum {
     A(u32, String),
     B,
@@ -93,79 +94,116 @@ where
     }
 }
 
+// 1. Generate a random value of type `T`.
+// 2. Assert that the serialized bytes of the random value equals to the return of `serialized_size`
+// 3. Repeat the above steps for n times or stop when an assertion fails
+fn assert_serialized_size<T>(n: usize)
+where
+    T: PartialOrd + Serialize + Debug,
+    Standard: Distribution<T>,
+{
+    for _ in 0..n {
+        let val: T = rand::random();
+        let serialized = serialize(&val).unwrap();
+        let expected_size = serialized_size(&val).unwrap();
+        assert_eq!(
+            serialized.len(),
+            expected_size,
+            "{:?} is expected to have size {}.",
+            val,
+            expected_size
+        );
+    }
+}
+
 #[test]
 fn test_u8() {
     assert_order_preservation_of_n_elems::<u8>(256);
+    assert_serialized_size::<u8>(256);
 }
 
 #[test]
 fn test_u16() {
     assert_order_preservation_of_n_elems::<u16>(1024);
+    assert_serialized_size::<u16>(1024);
 }
 
 #[test]
 fn test_u32() {
     assert_order_preservation_of_n_elems::<u32>(1024);
+    assert_serialized_size::<u32>(1024);
 }
 
 #[test]
 fn test_u64() {
     assert_order_preservation_of_n_elems::<u64>(1024);
+    assert_serialized_size::<u64>(1024);
 }
 
 #[test]
 fn test_usize() {
     assert_order_preservation_of_n_elems::<usize>(1024);
+    assert_serialized_size::<usize>(1024);
 }
 
 #[test]
 fn test_i8() {
     assert_order_preservation_of_n_elems::<i8>(256);
+    assert_serialized_size::<i8>(256);
 }
 
 #[test]
 fn test_i16() {
     assert_order_preservation_of_n_elems::<i16>(1024);
+    assert_serialized_size::<i16>(1024);
 }
 
 #[test]
 fn test_i32() {
     assert_order_preservation_of_n_elems::<i32>(1024);
+    assert_serialized_size::<i32>(1024);
 }
 
 #[test]
 fn test_i64() {
     assert_order_preservation_of_n_elems::<i64>(1024);
+    assert_serialized_size::<i64>(1024);
 }
 
 #[test]
 fn test_isize() {
     assert_order_preservation_of_n_elems::<isize>(1024);
+    assert_serialized_size::<isize>(1024);
 }
 
 #[test]
 fn test_f32() {
     assert_order_preservation_of_n_elems::<i32>(1024);
+    assert_serialized_size::<i32>(1024);
 }
 
 #[test]
 fn test_f64() {
     assert_order_preservation_of_n_elems::<i64>(1024);
+    assert_serialized_size::<i64>(1024);
 }
 
 #[test]
 fn test_bool() {
     assert_order_preservation_of_n_elems::<bool>(16);
+    assert_serialized_size::<bool>(16);
 }
 
 #[test]
 fn test_struct() {
     assert_order_preservation_of_n_elems::<TestStruct>(1024);
+    assert_serialized_size::<TestStruct>(1024);
 }
 
 #[test]
 fn test_enum() {
     assert_order_preservation_of_n_elems::<TestEnum>(1024);
+    assert_serialized_size::<TestEnum>(1024);
 }
 
 #[test]
